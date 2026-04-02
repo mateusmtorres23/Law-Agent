@@ -3,16 +3,19 @@ from starlette.staticfiles import StaticFiles
 from datetime import datetime
 from database import cases, messages
 
-app, rt = fast_app(hdrs=[Script(src="https://cdn.tailwindcss.com")])
+app, rt = fast_app(
+    pico=False,
+    hdrs=(Script(src="https://cdn.tailwindcss.com"),)
+    )
 
-app.mount("/assets", StaticFiles(directory="assets"), name="assets")
+app.mount("/assets", StaticFiles(directory="app/assets"), name="assets")
 
-def IconScale(): return Img(src="/assets/scale.svg", cls="w-5 h-5")
-def IconPlus(): return Img(src="/assets/plus.svg", cls="w-4 h-4")
-def IconSearch(): return Img(src="/assets/search.svg", cls="w-4 h-4")
-def IconMessage(): return Img(src="/assets/message-square.svg", cls="w-4 h-4 shrink-0")
-def IconMore(): return Img(src="/assets/more-vertical.svg", cls="w-5 h-5")
-def IconSend(): return Img(src="/assets/send.svg", cls="w-4 h-4")
+def IconScale(): return Img(src="app/assets/scale.svg", cls="w-5 h-5")
+def IconPlus(): return Img(src="app/assets/plus.svg", cls="w-4 h-4")
+def IconSearch(): return Img(src="app/assets/search.svg", cls="w-5 h-5")
+def IconMessage(): return Img(src="app/assets/message-square.svg", cls="w-4 h-4 shrink-0")
+def IconMore(): return Img(src="app/assets/more-vertical.svg", cls="w-5 h-5")
+def IconSend(): return Img(src="app/assets/send.svg", cls="w-4 h-4")
 
 def Sidebar(active_id=None):
     cases_list = cases()
@@ -30,7 +33,7 @@ def Sidebar(active_id=None):
 
     return Div(
         Div(
-            Div(IconScale(), Span("LexAssist AI", cls="ml-2"), cls="flex items-center text-white font-semibold text-lg"),
+            Div(IconScale(), Span("CJ-S2 Law Assistant", cls="ml-2"), cls="flex items-center text-white font-semibold text-lg"),
             cls="p-4 border-b border-slate-800 flex items-center justify-between"
         ),
         Form(
@@ -40,7 +43,7 @@ def Sidebar(active_id=None):
         ),
         Div(
             Div(
-                Span(IconSearch(), cls="absolute left-3 top-2.5 text-slate-500"),
+                Span(IconSearch(), cls="absolute left-3 top-2 text-slate-500"),
                 Input(type="text", placeholder="Search matters...", cls="w-full bg-slate-800 text-slate-200 placeholder-slate-500 rounded-md py-2 pl-9 pr-3 focus:outline-none focus:ring-1 focus:ring-amber-500 text-sm"),
                 cls="relative"
             ),
@@ -116,11 +119,11 @@ def get():
     )
 
 @rt("/chat/{case_id}")
-def get(case_id: int):
+def get_cases(case_id: int):
     return ChatWindow(case_id)
 
 @rt("/cases")
-def post():
+def post_cases():
     timestamp = datetime.now().isoformat()
     new_title = f"New Matter {len(cases()) + 1}"
     cases.insert(title=new_title, creation_date=timestamp)

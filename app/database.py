@@ -1,4 +1,7 @@
 from fasthtml.common import database
+from pathlib import Path
+
+db_path = Path(__file__).resolve().parent / 'db/database.db'
 
 class Case:
     id: int
@@ -17,7 +20,7 @@ class Document:
     filename: str
     text_content: str
 
-db = database('db/database.db')
+db = database(db_path)
 cases = db.create(Case, pk='id')
 messages = db.create(Message, pk='id')
 documents = db.create(Document, pk='id')
