@@ -12,5 +12,6 @@ dependencies = [
     "openai>=2.30.0",
     "pymupdf4llm>=1.27.2.2",
     "python-multipart>=0.0.22",
+    "sentence-transformers>=5.3.0",
     "sqlite-vec>=0.1.9",
 ]
