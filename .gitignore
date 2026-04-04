@@ -9,5 +9,5 @@ wheels/
 # Virtual environments
 .venv
 
-# Fast-HTML
-.sesskey
+# VS Code settings
+.vscode/
