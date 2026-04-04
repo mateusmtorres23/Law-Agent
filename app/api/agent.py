@@ -51,10 +51,13 @@ def generate_response(user_message: str, retrieved_context: list[str]) -> str:
     law_agent = Agent(
         model=Ollama(id="qwen3.5:2b"),
         description="A specialized legal assistant focused on case analysis.",
+        instructions=["Base your answers strictly on the provided context.", "Be formal and precise.",
+                      """If the question is about a broad theme, check if there's some correlation with the retrieved context 
+                      and answer based on that. If not, answer based on general legal knowledge."""],
     )
     
-    context_str = "\n\n---\n\n".join(retrieved_context)
-    prompt = f"Use the following legal documents to answer the question:\n\n{context_str}\n\nQuestion: {user_message}"
+    context_str = "\n\n---\n\n".join(retrieved_context) if retrieved_context else "No context found."
+    prompt = f"Context:\n{context_str}\n\nQuestion: {user_message}"
     
     response = law_agent.run(prompt)
     return str(response.content) if response.content else "Error: No response generated."

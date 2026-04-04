@@ -2,7 +2,8 @@ import json
 from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.database import init_db, get_db_connection, insert_case, get_cases, insert_message
+from app.api.database import (init_db, get_db_connection, insert_case, get_cases, insert_message, get_messages,
+                              update_case, delete_case)
 from app.api.agent import process_pdf_bytes, embed_query, generate_response
 
 app = FastAPI(title="Law Agent API")
@@ -28,6 +29,10 @@ def create_case(title: str):
 def list_cases():
     return get_cases()
 
+@app.get("/api/cases/{case_id}/messages")
+def list_messages(case_id: int):
+    return get_messages(case_id)
+
 @app.post("/api/cases/{case_id}/documents")
 async def upload_document(case_id: int, file: UploadFile = File(...)):
     if file.filename is None or not file.filename.endswith(".pdf"):
@@ -46,11 +51,13 @@ async def upload_document(case_id: int, file: UploadFile = File(...)):
         
         for chunk in chunks:
             cursor.execute(
-                "INSERT INTO document_chunks (document_id, case_id, text_content, embedding) VALUES (?, ?, ?, ?)",
-                (doc_id, case_id, chunk["content"], str(chunk["embedding"]))
+                """
+                INSERT INTO document_chunks (document_id, case_id, text_content, embedding) 
+                VALUES (?, ?, ?, vec_f32(?))
+                """,
+                (doc_id, case_id, chunk["content"], json.dumps(chunk["embedding"]))
             )
         conn.commit()
-        
     return {"status": "success", "chunks_ingested": len(chunks)}
 
 @app.websocket("/api/chat/{case_id}")
@@ -63,15 +70,16 @@ async def chat_endpoint(websocket: WebSocket, case_id: int):
             user_text = message_data.get("text", "")
             
             insert_message(case_id, "user", user_text)
+            
             query_vector = embed_query(user_text)
             
             with get_db_connection() as conn:
                 rows = conn.execute("""
                     SELECT text_content 
                     FROM document_chunks 
-                    WHERE case_id = ? AND embedding MATCH ? AND k = 3
+                    WHERE case_id = ? AND embedding MATCH vec_f32(?) AND k = 3
                     ORDER BY distance
-                """, (case_id, str(query_vector))).fetchall()
+                """, (case_id, json.dumps(query_vector))).fetchall()
                 
                 retrieved_context = [row["text_content"] for row in rows]
             
@@ -82,6 +90,15 @@ async def chat_endpoint(websocket: WebSocket, case_id: int):
                 "role": "ai",
                 "content": response_text
             })
-            
     except WebSocketDisconnect:
         pass
+
+@app.put("/api/cases/{case_id}")
+def update_case_route(case_id: int, title: str):
+    update_case(case_id, title)
+    return {"status": "success"}
+
+@app.delete("/api/cases/{case_id}")
+def delete_case_route(case_id: int):
+    delete_case(case_id)
+    return {"status": "success"}

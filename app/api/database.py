@@ -77,3 +77,16 @@ def insert_message(case_id: int, role: str, content: str) -> dict:
 def get_messages(case_id: int) -> list[dict]:
     with get_db_connection() as conn:
         return [dict(row) for row in conn.execute("SELECT * FROM messages WHERE case_id = ? ORDER BY id ASC", (case_id,)).fetchall()]
+
+def update_case(case_id: int, new_title: str):
+    with get_db_connection() as conn:
+        conn.execute("UPDATE cases SET title = ? WHERE id = ?", (new_title, case_id))
+        conn.commit()
+
+def delete_case(case_id: int):
+    with get_db_connection() as conn:
+        conn.execute("DELETE FROM document_chunks WHERE case_id = ?", (case_id,))
+        conn.execute("DELETE FROM documents WHERE case_id = ?", (case_id,))
+        conn.execute("DELETE FROM messages WHERE case_id = ?", (case_id,))
+        conn.execute("DELETE FROM cases WHERE id = ?", (case_id,))
+        conn.commit()

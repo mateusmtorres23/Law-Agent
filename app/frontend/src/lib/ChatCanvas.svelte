@@ -1,6 +1,7 @@
 <script>
     import { messages, activeCase, store, isUploading } from './store.js';
     import { Send, Paperclip, Loader2, Scale } from 'lucide-svelte';
+    import { marked } from 'marked';
 
     let text = $state("");
     let fileInput = $state(null);
@@ -18,6 +19,11 @@
             await store.uploadDocument($activeCase.id, file);
         }
     }
+
+    marked.setOptions({
+        breaks: true,
+        gfm: true
+    });
 </script>
 
 <section class="flex-1 flex flex-col relative bg-slate-900">
@@ -29,9 +35,16 @@
         <div class="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-thin scrollbar-thumb-slate-700">
             {#each $messages as msg}
                 <div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
-                    <div class="max-w-[70%] p-4 rounded-2xl text-sm leading-relaxed 
+                    <div class="max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap
                         {msg.role === 'user' ? 'bg-amber-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700 shadow-sm'}">
-                        {msg.content}
+                        
+                        {#if msg.role === 'user'}
+                            {msg.content}
+                        {:else}
+                            <div class="markdown-container">
+                                {@html marked.parse(msg.content)}
+                            </div>
+                        {/if}
                     </div>
                 </div>
             {/each}
@@ -46,30 +59,17 @@
                     </div>
                 {/if}
                 <div class="flex items-center p-2">
-                    <button 
-                        onclick={() => fileInput.click()} 
-                        class="p-2 text-slate-400 hover:text-amber-500 transition-colors"
-                        title="Attach Legal Document"
-                    >
+                    <button onclick={() => fileInput.click()} class="p-2 text-slate-400 hover:text-amber-500 transition-colors">
                         <Paperclip size={20} />
                     </button>
-                    <input 
-                        type="file" 
-                        bind:this={fileInput} 
-                        onchange={handleFile} 
-                        class="hidden" 
-                        accept=".pdf" 
-                    />
+                    <input type="file" bind:this={fileInput} onchange={handleFile} class="hidden" accept=".pdf" />
                     <input 
                         bind:value={text} 
                         onkeydown={(e) => e.key === 'Enter' && handleSend()}
                         placeholder="Analyze case law or ask a question..." 
                         class="flex-1 bg-transparent border-none focus:ring-0 text-slate-200 text-sm px-3 py-2 placeholder:text-slate-500"
                     />
-                    <button 
-                        onclick={handleSend} 
-                        class="p-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all active:scale-95 shadow-md"
-                    >
+                    <button onclick={handleSend} class="p-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all active:scale-95 shadow-md">
                         <Send size={18} />
                     </button>
                 </div>
@@ -87,3 +87,21 @@
         </div>
     {/if}
 </section>
+
+<style>
+    :global(.markdown-container p) {
+        margin-bottom: 1rem;
+    }
+    :global(.markdown-container p:last-child) {
+        margin-bottom: 0;
+    }
+    :global(.markdown-container ul) {
+        list-style-type: disc;
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    :global(.markdown-container strong) {
+        color: #fbbf24;
+        font-weight: 600;
+    }
+</style>
