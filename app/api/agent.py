@@ -1,10 +1,18 @@
-import fitz 
+import fitz
+import os
 import pymupdf4llm
 from sentence_transformers import SentenceTransformer
 from agno.agent import Agent
 from agno.models.ollama import Ollama
 
-embedder = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5", device="cpu", trust_remote_code=True)
+os.environ["HF_HUB_OFFLINE"] = "1"
+
+embedder = SentenceTransformer(
+    "nomic-ai/nomic-embed-text-v1.5", 
+    device="cpu", 
+    trust_remote_code=True,
+    model_kwargs={"local_files_only": True}
+)
 
 def process_pdf_bytes(file_bytes: bytes) -> list[dict]:
     doc = fitz.open("pdf", file_bytes)

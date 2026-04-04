@@ -51,7 +51,7 @@ def init_db():
                 document_id INTEGER,
                 case_id INTEGER,
                 text_content TEXT,
-                embedding float[1536]
+                embedding float[768]
             )
         """)
         conn.commit()

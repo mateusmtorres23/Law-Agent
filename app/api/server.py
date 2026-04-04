@@ -2,8 +2,8 @@ import json
 from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from database import init_db, get_db_connection, insert_case, get_cases, insert_message
-import agent
+from app.api.database import init_db, get_db_connection, insert_case, get_cases, insert_message
+from app.api.agent import process_pdf_bytes, embed_query, generate_response
 
 app = FastAPI(title="Law Agent API")
 
@@ -34,7 +34,7 @@ async def upload_document(case_id: int, file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="A valid PDF file is required.")
     
     file_bytes = await file.read()
-    chunks = agent.process_pdf_bytes(file_bytes)
+    chunks = process_pdf_bytes(file_bytes)
     
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -63,7 +63,7 @@ async def chat_endpoint(websocket: WebSocket, case_id: int):
             user_text = message_data.get("text", "")
             
             insert_message(case_id, "user", user_text)
-            query_vector = agent.embed_query(user_text)
+            query_vector = embed_query(user_text)
             
             with get_db_connection() as conn:
                 rows = conn.execute("""
@@ -75,7 +75,7 @@ async def chat_endpoint(websocket: WebSocket, case_id: int):
                 
                 retrieved_context = [row["text_content"] for row in rows]
             
-            response_text = agent.generate_response(user_text, retrieved_context)
+            response_text = generate_response(user_text, retrieved_context)
             insert_message(case_id, "ai", response_text)
             
             await websocket.send_json({
